@@ -10,6 +10,26 @@ This repository is an overview of what you need to learn penetration testing and
 
 ----
 
+## Progress tracker
+
+This repository ships a small dependency-free Python CLI that turns the tool
+tables below into a personal learning checklist:
+
+```bash
+python3 roadmap.py categories                     # tools per category, with progress
+python3 roadmap.py list                           # every tool with [x] learned marks
+python3 roadmap.py list --category web --language python
+python3 roadmap.py done Nmap                      # mark a tool as learned
+python3 roadmap.py undone nmap                    # unmark it
+python3 roadmap.py progress                       # progress bars per category
+```
+
+State is stored in `~/.hacker-roadmap/state.json` (override with
+`--state path`), and the README itself is parsed with `--readme path`, so
+the tracker works on forks and local edits too.
+
+Tests: `python3 -m pytest tests/` (CI runs them on every push).
+
 ## Before you start
 
 - If you're new to information security, forget everything you know about hacking.
