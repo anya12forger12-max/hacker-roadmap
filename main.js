@@ -1,6 +1,27 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-// ---------- Roadmap data ----------
+/* ============================================================
+   DATA
+   ============================================================ */
+const stages = [
+  { title: 'Fundamentals', tag: 'BEGINNER', desc: 'Networking basics, Linux command line, and one scripting language (Python/Bash). Build the base everything else rests on.', color: 0x00ffaa, icon: '⚙' },
+  { title: 'Reconnaissance & OSINT', tag: 'BEGINNER', desc: 'Passive/active info gathering, Google dorking, Shodan, footprinting. Know the target before touching it.', color: 0x00ffaa, icon: '🔍' },
+  { title: 'Scanning & Enumeration', tag: 'BEGINNER', desc: 'Nmap, service/version detection, banner grabbing, SMB/DNS enum. Map the attack surface.', color: 0x00e0ff, icon: '📡' },
+  { title: 'Vulnerability Analysis', tag: 'INTERMEDIATE', desc: 'CVE research, Nessus/OpenVAS, manual verification, false positives. Separate real risk from noise.', color: 0x00e0ff, icon: '🛡' },
+  { title: 'Exploitation', tag: 'INTERMEDIATE', desc: 'Metasploit, exploit-db, manual exploitation, payload crafting. Gain initial access responsibly.', color: 0x3cffa0, icon: '💥' },
+  { title: 'Web App Hacking', tag: 'INTERMEDIATE', desc: 'OWASP Top 10: SQLi, XSS, CSRF, SSRF, auth bypass, IDOR. Where most bugs live.', color: 0xffd166, icon: '🌐' },
+  { title: 'Wireless & Network', tag: 'INTERMEDIATE', desc: 'WPA2 handshake, evil twin, MITM, ARP spoofing, sniffing. Own the air and the wire.', color: 0xffd166, icon: '📶' },
+  { title: 'Privilege Escalation', tag: 'ADVANCED', desc: 'Linux/Windows privesc, kernel exploits, misconfigs, tokens. From user to root.', color: 0xff8c42, icon: '⬆' },
+  { title: 'Post-Exploitation', tag: 'ADVANCED', desc: 'Persistence, pivoting, lateral movement, credential dumping. Move quietly, document everything.', color: 0xff8c42, icon: '🔗' },
+  { title: 'Covering Tracks', tag: 'ADVANCED', desc: 'Log tampering awareness, anti-forensics, detection evasion — studied defensively to improve blue teams.', color: 0xff3c78, icon: '🕵' },
+  { title: 'Reporting & Disclosure', tag: 'ADVANCED', desc: 'Professional pentest reports, CVSS scoring, responsible disclosure. A finding is only real when reported.', color: 0xff3c78, icon: '📄' },
+  { title: 'Red Team & Advanced', tag: 'EXPERT', desc: 'Cloud, mobile, malware dev, custom tooling, adversary simulation. The deep end.', color: 0xb57bff, icon: '🎯' },
+];
+
 const stageResources = [
   ['TCP/IP & OSI model', 'Linux basics (bash, permissions)', 'Python scripting'],
   ['Google dorking', 'Shodan / Censys', 'WHOIS & DNS recon'],
@@ -16,46 +37,75 @@ const stageResources = [
   ['Cloud (AWS/GCP) attacks', 'Mobile (Android/iOS)', 'Malware dev basics'],
 ];
 
-const stages = [
-  { title: 'Fundamentals', tag: 'BEGINNER', desc: 'Networking basics, Linux command line, and one scripting language (Python/Bash).', color: 0x00ffaa },
-  { title: 'Reconnaissance & OSINT', tag: 'BEGINNER', desc: 'Passive/active info gathering, Google dorking, Shodan, footprinting.', color: 0x00ffaa },
-  { title: 'Scanning & Enumeration', tag: 'BEGINNER', desc: 'Nmap, service/version detection, banner grabbing, SMB/DNS enum.', color: 0x00e0ff },
-  { title: 'Vulnerability Analysis', tag: 'INTERMEDIATE', desc: 'CVE research, Nessus/OpenVAS, manual verification, false positives.', color: 0x00e0ff },
-  { title: 'Exploitation', tag: 'INTERMEDIATE', desc: 'Metasploit, exploit-db, manual exploitation, payload crafting.', color: 0x3cffa0 },
-  { title: 'Web App Hacking', tag: 'INTERMEDIATE', desc: 'OWASP Top 10: SQLi, XSS, CSRF, SSRF, auth bypass, IDOR.', color: 0xffd166 },
-  { title: 'Wireless & Network', tag: 'INTERMEDIATE', desc: 'WPA2 handshake, evil twin, MITM, ARP spoofing, sniffing.', color: 0xffd166 },
-  { title: 'Privilege Escalation', tag: 'ADVANCED', desc: 'Linux/Windows privesc, kernel exploits, misconfigs, tokens.', color: 0xff8c42 },
-  { title: 'Post-Exploitation', tag: 'ADVANCED', desc: 'Persistence, pivoting, lateral movement, credential dumping.', color: 0xff8c42 },
-  { title: 'Covering Tracks', tag: 'ADVANCED', desc: 'Log tampering awareness, anti-forensics, detection evasion (defensive).', color: 0xff3c78 },
-  { title: 'Reporting & Disclosure', tag: 'ADVANCED', desc: 'Professional pentest reports, CVSS scoring, responsible disclosure.', color: 0xff3c78 },
-  { title: 'Red Team & Advanced', tag: 'EXPERT', desc: 'Cloud, mobile, malware dev, custom tooling, adversary simulation.', color: 0xb57bff },
-];
+const N = stages.length;
 
-// ---------- Scene setup ----------
+/* ============================================================
+   STORAGE
+   ============================================================ */
+const STORE = {
+  progress: 'hr-progress',
+  completed: 'hr-completed',
+  notes: 'hr-notes',
+};
+function loadCompleted() {
+  try { return new Set(JSON.parse(localStorage.getItem(STORE.completed) || '[]')); }
+  catch (e) { return new Set(); }
+}
+function saveCompleted(set) {
+  try { localStorage.setItem(STORE.completed, JSON.stringify([...set])); } catch (e) {}
+}
+function loadNotes() {
+  try { return JSON.parse(localStorage.getItem(STORE.notes) || '{}'); }
+  catch (e) { return {}; }
+}
+function saveNotes(obj) {
+  try { localStorage.setItem(STORE.notes, JSON.stringify(obj)); } catch (e) {}
+}
+let completed = loadCompleted();
+let notes = loadNotes();
+
+/* ============================================================
+   SCENE SETUP
+   ============================================================ */
 const canvas = document.getElementById('scene');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x05080f, 0.035);
+scene.fog = new THREE.FogExp2(0x05080f, 0.032);
 
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 200);
 
 // Lights
-scene.add(new THREE.AmbientLight(0x334466, 0.6));
-const keyLight = new THREE.DirectionalLight(0x00ffaa, 0.9);
-keyLight.position.set(10, 20, 10);
+scene.add(new THREE.AmbientLight(0x334466, 0.5));
+const keyLight = new THREE.DirectionalLight(0x00ffaa, 1.0);
+keyLight.position.set(12, 24, 12);
 scene.add(keyLight);
-const rim = new THREE.PointLight(0xff3c78, 0.8, 60);
-rim.position.set(-10, 5, -10);
+const rim = new THREE.PointLight(0xff3c78, 1.0, 80);
+rim.position.set(-12, 6, -12);
 scene.add(rim);
+const fill = new THREE.PointLight(0x00e0ff, 0.6, 60);
+fill.position.set(8, -4, 8);
+scene.add(fill);
 
-// ---------- Build path ----------
-const N = stages.length;
-const radius = 7;
-const verticalStep = 2.2;
+// Post-processing
+const composer = new EffectComposer(renderer);
+const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.9, 0.4, 0.2);
+composer.addPass(bloomPass);
+const outputPass = new OutputPass();
+composer.addPass(outputPass);
+
+/* ============================================================
+   PATH
+   ============================================================ */
+const radius = 7.2;
+const verticalStep = 2.3;
 const points = [];
 for (let i = 0; i < N; i++) {
   const angle = (i / (N - 1)) * Math.PI * 2.6 - Math.PI * 1.3;
@@ -66,149 +116,183 @@ for (let i = 0; i < N; i++) {
 }
 const curve = new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.5);
 
-// Path line
-const pathGeo = new THREE.TubeGeometry(curve, 200, 0.12, 12, false);
+// Path tube
+const pathGeo = new THREE.TubeGeometry(curve, 240, 0.13, 16, false);
 const pathMat = new THREE.MeshStandardMaterial({
-  color: 0x00ffaa, emissive: 0x00ffaa, emissiveIntensity: 0.4,
-  transparent: true, opacity: 0.55, metalness: 0.3, roughness: 0.4,
+  color: 0x00ffaa, emissive: 0x00ffaa, emissiveIntensity: 0.5,
+  transparent: true, opacity: 0.6, metalness: 0.4, roughness: 0.3,
 });
 const pathMesh = new THREE.Mesh(pathGeo, pathMat);
 scene.add(pathMesh);
 
-// Glow under path (thicker, faint)
-const glowGeo = new THREE.TubeGeometry(curve, 200, 0.45, 12, false);
-const glowMat = new THREE.MeshBasicMaterial({ color: 0x00ffaa, transparent: true, opacity: 0.06, side: THREE.DoubleSide });
+// Glow tube
+const glowGeo = new THREE.TubeGeometry(curve, 240, 0.5, 16, false);
+const glowMat = new THREE.MeshBasicMaterial({ color: 0x00ffaa, transparent: true, opacity: 0.05, side: THREE.DoubleSide });
 scene.add(new THREE.Mesh(glowGeo, glowMat));
 
-// Nodes
+/* ============================================================
+   NODES
+   ============================================================ */
 const nodeGroup = new THREE.Group();
 scene.add(nodeGroup);
 const nodeMeshes = [];
 const nodeTs = [];
+
 for (let i = 0; i < N; i++) {
   const t = i / (N - 1);
   nodeTs.push(t);
   const pos = curve.getPoint(t);
+  const col = stages[i].color;
 
-  // base ring
-  const ringGeo = new THREE.TorusGeometry(0.55, 0.06, 12, 32);
-  const ringMat = new THREE.MeshStandardMaterial({ color: stages[i].color, emissive: stages[i].color, emissiveIntensity: 0.8 });
+  // ring
+  const ringGeo = new THREE.TorusGeometry(0.58, 0.07, 12, 40);
+  const ringMat = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.9, metalness: 0.5, roughness: 0.2 });
   const ring = new THREE.Mesh(ringGeo, ringMat);
   ring.position.copy(pos);
   ring.rotation.x = Math.PI / 2;
   nodeGroup.add(ring);
 
-  // core sphere
-  const coreGeo = new THREE.SphereGeometry(0.28, 24, 24);
-  const coreMat = new THREE.MeshStandardMaterial({ color: stages[i].color, emissive: stages[i].color, emissiveIntensity: 1.2, metalness: 0.5, roughness: 0.2 });
+  // core
+  const coreGeo = new THREE.SphereGeometry(0.3, 32, 32);
+  const coreMat = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 1.4, metalness: 0.6, roughness: 0.15 });
   const core = new THREE.Mesh(coreGeo, coreMat);
   core.position.copy(pos);
   nodeGroup.add(core);
 
   // halo
-  const haloGeo = new THREE.SphereGeometry(0.5, 24, 24);
-  const haloMat = new THREE.MeshBasicMaterial({ color: stages[i].color, transparent: true, opacity: 0.12, side: THREE.DoubleSide });
+  const haloGeo = new THREE.SphereGeometry(0.55, 24, 24);
+  const haloMat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.12, side: THREE.DoubleSide });
   const halo = new THREE.Mesh(haloGeo, haloMat);
   halo.position.copy(pos);
   nodeGroup.add(halo);
 
+  // outer pulse ring (for current)
+  const pulseGeo = new THREE.RingGeometry(0.7, 0.78, 48);
+  const pulseMat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0, side: THREE.DoubleSide });
+  const pulse = new THREE.Mesh(pulseGeo, pulseMat);
+  pulse.position.copy(pos);
+  pulse.rotation.x = -Math.PI / 2;
+  nodeGroup.add(pulse);
+
   // label sprite
-  const labelTex = makeLabelTexture(`${i + 1}. ${stages[i].title}`, stages[i].color);
+  const labelTex = makeLabelTexture(`${i + 1}. ${stages[i].title}`, col, completed.has(i));
   const labelMat = new THREE.SpriteMaterial({ map: labelTex, transparent: true, depthTest: false });
   const sprite = new THREE.Sprite(labelMat);
-  sprite.position.copy(pos).add(new THREE.Vector3(0, 1.0, 0));
-  sprite.scale.set(4.2, 1.0, 1);
+  sprite.position.copy(pos).add(new THREE.Vector3(0, 1.15, 0));
+  sprite.scale.set(4.6, 1.1, 1);
   nodeGroup.add(sprite);
 
-  nodeMeshes.push({ ring, core, halo, sprite, index: i, t });
+  nodeMeshes.push({ ring, core, halo, pulse, sprite, index: i, t, baseY: pos.y });
 }
 
-function makeLabelTexture(text, color) {
+function makeLabelTexture(text, color, done) {
   const c = document.createElement('canvas');
   c.width = 512; c.height = 128;
   const ctx = c.getContext('2d');
   ctx.clearRect(0, 0, c.width, c.height);
-  ctx.font = 'bold 34px "JetBrains Mono", monospace';
+  ctx.font = 'bold 32px "JetBrains Mono", monospace';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.shadowColor = '#' + color.toString(16).padStart(6, '0');
-  ctx.shadowBlur = 18;
-  ctx.fillStyle = '#ffffff';
+  const hex = '#' + color.toString(16).padStart(6, '0');
+  ctx.shadowColor = hex;
+  ctx.shadowBlur = 20;
+  ctx.fillStyle = done ? '#7affc4' : '#ffffff';
   ctx.fillText(text, c.width / 2, c.height / 2);
+  if (done) {
+    ctx.font = 'bold 26px "JetBrains Mono", monospace';
+    ctx.fillStyle = hex;
+    ctx.shadowBlur = 0;
+    ctx.fillText('✓', c.width - 40, 30);
+  }
   const tex = new THREE.CanvasTexture(c);
   tex.needsUpdate = true;
   return tex;
 }
 
+function refreshNodeLabel(i) {
+  const nm = nodeMeshes[i];
+  const tex = makeLabelTexture(`${i + 1}. ${stages[i].title}`, stages[i].color, completed.has(i));
+  nm.sprite.material.map.dispose();
+  nm.sprite.material.map = tex;
+}
+
+// "You are here" beacon beam
+const beaconGeo = new THREE.CylinderGeometry(0.02, 0.18, 1, 16, 1, true);
+const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff3c78, transparent: true, opacity: 0.55, side: THREE.DoubleSide });
+const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+scene.add(beacon);
+
 // Particles
-const particleCount = 600;
+const particleCount = 700;
 const pGeo = new THREE.BufferGeometry();
 const pPos = new Float32Array(particleCount * 3);
+const pCol = new Float32Array(particleCount * 3);
 for (let i = 0; i < particleCount; i++) {
-  pPos[i * 3] = (Math.random() - 0.5) * 60;
-  pPos[i * 3 + 1] = (Math.random() - 0.5) * 60;
-  pPos[i * 3 + 2] = (Math.random() - 0.5) * 60;
+  pPos[i * 3] = (Math.random() - 0.5) * 70;
+  pPos[i * 3 + 1] = (Math.random() - 0.5) * 70;
+  pPos[i * 3 + 2] = (Math.random() - 0.5) * 70;
+  const c = new THREE.Color().setHSL(0.3 + Math.random() * 0.15, 0.9, 0.6);
+  pCol[i * 3] = c.r; pCol[i * 3 + 1] = c.g; pCol[i * 3 + 2] = c.b;
 }
 pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-const pMat = new THREE.PointsMaterial({ color: 0x00ffaa, size: 0.08, transparent: true, opacity: 0.5, sizeAttenuation: true });
+pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+const pMat = new THREE.PointsMaterial({ size: 0.09, transparent: true, opacity: 0.55, sizeAttenuation: true, vertexColors: true });
 const particles = new THREE.Points(pGeo, pMat);
 scene.add(particles);
 
-// Grid floor (subtle)
-const grid = new THREE.GridHelper(80, 40, 0x00ffaa, 0x0a1a2a);
-grid.position.y = points[0].y - 3;
-grid.material.opacity = 0.25;
+// Grid
+const grid = new THREE.GridHelper(90, 45, 0x00ffaa, 0x0a1a2a);
+grid.position.y = points[0].y - 3.2;
+grid.material.opacity = 0.22;
 grid.material.transparent = true;
 scene.add(grid);
 
-// ---------- State ----------
-let progress = 0; // 0..1
+/* ============================================================
+   STATE
+   ============================================================ */
+let progress = 0;
 let targetProgress = 0;
 let currentIndex = 0;
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
+let hoveredNode = -1;
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// ---------- UI refs ----------
-const hudTitle = document.getElementById('hud-title');
-const hudDesc = document.getElementById('hud-desc');
-const hudIndex = document.getElementById('hud-index');
-const hudTag = document.getElementById('hud-tag');
-const hudBar = document.getElementById('hud-progress-bar');
-const hudResources = document.getElementById('hud-resources');
-const progressPct = document.getElementById('progress-pct');
-const tooltip = document.getElementById('tooltip');
-const minimap = document.getElementById('minimap');
-const loader = document.getElementById('loader');
+/* ============================================================
+   UI REFS
+   ============================================================ */
+const $ = (id) => document.getElementById(id);
+const hudTitle = $('hud-title');
+const hudDesc = $('hud-desc');
+const hudIndex = $('hud-index');
+const hudTag = $('hud-tag');
+const hudBar = $('hud-progress-bar');
+const hudResources = $('hud-resources');
+const progressPct = $('progress-pct');
+const tooltip = $('tooltip');
+const minimap = $('minimap');
+const loader = $('loader');
+const toast = $('toast');
+const modal = $('shortcuts-modal');
+const notesInput = $('notes-input');
+const completeBtn = $('btn-complete');
+const overallRing = $('overall-ring');
+const overallPct = $('overall-pct');
 
-// Build minimap dots
+/* minimap */
 stages.forEach((s, i) => {
-  const d = document.createElement('div');
+  const d = document.createElement('button');
   d.className = 'node-dot';
+  d.type = 'button';
   d.title = s.title;
+  d.setAttribute('aria-label', `Jump to stage ${i + 1}: ${s.title}`);
   d.addEventListener('click', () => jumpTo(i));
   minimap.appendChild(d);
 });
 const minimapDots = Array.from(minimap.querySelectorAll('.node-dot'));
 
-function jumpTo(i) {
-  const t = nodeTs[i];
-  targetProgress = t;
-  syncScrollTo(t);
-  try { localStorage.setItem('hr-progress', String(t)); } catch (e) {}
-}
-
-// Keyboard navigation
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); jumpTo(Math.min(N - 1, currentIndex + 1)); }
-  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); jumpTo(Math.max(0, currentIndex - 1)); }
-  else if (e.key === 'Home') { e.preventDefault(); jumpTo(0); }
-  else if (e.key === 'End') { e.preventDefault(); jumpTo(N - 1); }
-});
-
-function syncScrollTo(t) {
-  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-  window.scrollTo({ top: t * maxScroll, behavior: 'smooth' });
-}
-
+/* ============================================================
+   CORE LOGIC
+   ============================================================ */
 function nearestIndex(t) {
   let best = 0, bestD = Infinity;
   nodeTs.forEach((nt, i) => {
@@ -216,6 +300,19 @@ function nearestIndex(t) {
     if (d < bestD) { bestD = d; best = i; }
   });
   return best;
+}
+
+function jumpTo(i) {
+  const t = nodeTs[i];
+  targetProgress = t;
+  syncScrollTo(t);
+  try { localStorage.setItem(STORE.progress, String(t)); } catch (e) {}
+  showToast(`Jumped to stage ${i + 1}: ${stages[i].title}`);
+}
+
+function syncScrollTo(t) {
+  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  window.scrollTo({ top: t * maxScroll, behavior: reducedMotion ? 'auto' : 'smooth' });
 }
 
 function updateHud(t) {
@@ -227,45 +324,86 @@ function updateHud(t) {
     hudDesc.textContent = s.desc;
     hudIndex.textContent = `Stage ${i + 1} of ${N}`;
     hudTag.textContent = s.tag;
-    // color tag
     hudTag.style.color = '#' + s.color.toString(16).padStart(6, '0');
-    // resources
     hudResources.innerHTML = (stageResources[i] || []).map(r => `<span class="chip">${r}</span>`).join('');
+    // notes
+    notesInput.value = notes[i] || '';
+    // complete button state
+    updateCompleteBtn();
   }
   const pct = Math.round(t * 100);
   progressPct.textContent = pct + '%';
   hudBar.style.width = pct + '%';
 
-  // minimap
   minimapDots.forEach((d, idx) => {
     d.classList.remove('done', 'current');
-    if (idx < currentIndex) d.classList.add('done');
+    if (completed.has(idx)) d.classList.add('done');
     if (idx === currentIndex) d.classList.add('current');
   });
 
-  // node visual state
   nodeMeshes.forEach((nm, idx) => {
     const active = idx === currentIndex;
-    const past = idx < currentIndex;
-    nm.core.scale.setScalar(active ? 1.5 : (past ? 1.0 : 0.85));
-    nm.halo.material.opacity = active ? 0.35 : (past ? 0.18 : 0.08);
-    nm.ring.material.emissiveIntensity = active ? 1.6 : 0.6;
+    const past = idx < currentIndex || completed.has(idx);
+    const s = active ? 1.5 : (past ? 1.05 : 0.85);
+    nm.core.scale.setScalar(s);
+    nm.halo.material.opacity = active ? 0.38 : (past ? 0.18 : 0.08);
+    nm.ring.material.emissiveIntensity = active ? 1.7 : 0.6;
+    nm.pulse.material.opacity = active ? (0.35 + 0.25 * Math.sin(performance.now() * 0.004)) : 0;
   });
+
+  updateOverallProgress();
 }
 
-// ---------- Scroll handling ----------
+function updateCompleteBtn() {
+  const done = completed.has(currentIndex);
+  completeBtn.textContent = done ? '✓ Completed' : 'Mark complete';
+  completeBtn.classList.toggle('done', done);
+}
+
+function toggleComplete() {
+  if (completed.has(currentIndex)) completed.delete(currentIndex);
+  else completed.add(currentIndex);
+  saveCompleted(completed);
+  refreshNodeLabel(currentIndex);
+  updateCompleteBtn();
+  updateOverallProgress();
+  showToast(completed.has(currentIndex) ? `Stage ${currentIndex + 1} marked complete` : `Stage ${currentIndex + 1} unmarked`);
+}
+
+function updateOverallProgress() {
+  const pct = Math.round((completed.size / N) * 100);
+  overallPct.textContent = pct + '%';
+  const circumference = 2 * Math.PI * 16;
+  overallRing.style.strokeDasharray = `${circumference}`;
+  overallRing.style.strokeDashoffset = `${circumference * (1 - completed.size / N)}`;
+}
+
+/* notes */
+function saveNote() {
+  notes[currentIndex] = notesInput.value;
+  saveNotes(notes);
+}
+let noteTimer = null;
+notesInput.addEventListener('input', () => {
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(saveNote, 400);
+});
+
+/* ============================================================
+   SCROLL
+   ============================================================ */
 function onScroll() {
   const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
   targetProgress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
   targetProgress = Math.max(0, Math.min(1, targetProgress));
-  try { localStorage.setItem('hr-progress', String(targetProgress)); } catch (e) {}
+  try { localStorage.setItem(STORE.progress, String(targetProgress)); } catch (e) {}
 }
 window.addEventListener('scroll', onScroll, { passive: true });
 onScroll();
 
-// Restore saved progress
+// restore
 try {
-  const saved = parseFloat(localStorage.getItem('hr-progress') || '0');
+  const saved = parseFloat(localStorage.getItem(STORE.progress) || '0');
   if (!isNaN(saved) && saved > 0) {
     targetProgress = saved;
     progress = saved;
@@ -273,14 +411,20 @@ try {
   }
 } catch (e) {}
 
-// ---------- Resize ----------
+/* ============================================================
+   RESIZE
+   ============================================================ */
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+  bloomPass.resolution.set(window.innerWidth, window.innerHeight);
 });
 
-// ---------- Mouse interaction ----------
+/* ============================================================
+   MOUSE / TOUCH
+   ============================================================ */
 canvas.addEventListener('mousemove', (e) => {
   mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -298,77 +442,128 @@ canvas.addEventListener('click', () => {
   }
 });
 
-// ---------- Buttons ----------
-document.getElementById('btn-prev').addEventListener('click', () => {
-  const i = Math.max(0, currentIndex - 1);
-  jumpTo(i);
-});
-document.getElementById('btn-next').addEventListener('click', () => {
-  const i = Math.min(N - 1, currentIndex + 1);
-  jumpTo(i);
+// touch swipe
+let touchStartY = null;
+canvas.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; }, { passive: true });
+canvas.addEventListener('touchend', (e) => {
+  if (touchStartY === null) return;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dy) > 60) {
+    if (dy < 0) jumpTo(Math.min(N - 1, currentIndex + 1));
+    else jumpTo(Math.max(0, currentIndex - 1));
+  }
+  touchStartY = null;
+}, { passive: true });
+
+/* ============================================================
+   KEYBOARD
+   ============================================================ */
+window.addEventListener('keydown', (e) => {
+  const tag = (e.target && e.target.tagName) || '';
+  if (tag === 'TEXTAREA' || tag === 'INPUT') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); jumpTo(Math.min(N - 1, currentIndex + 1)); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); jumpTo(Math.max(0, currentIndex - 1)); }
+  else if (e.key === 'Home') { e.preventDefault(); jumpTo(0); }
+  else if (e.key === 'End') { e.preventDefault(); jumpTo(N - 1); }
+  else if (e.key === '?' ) { e.preventDefault(); toggleShortcuts(); }
+  else if (e.key === 'Escape') { closeModal(); }
+  else if (e.key.toLowerCase() === 'c') { toggleComplete(); }
 });
 
-// ---------- Animation loop ----------
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+$('btn-prev').addEventListener('click', () => jumpTo(Math.max(0, currentIndex - 1)));
+$('btn-next').addEventListener('click', () => jumpTo(Math.min(N - 1, currentIndex + 1)));
+completeBtn.addEventListener('click', toggleComplete);
+$('btn-shortcuts').addEventListener('click', toggleShortcuts);
+$('modal-close').addEventListener('click', closeModal);
+modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+function toggleShortcuts() { modal.classList.toggle('open'); }
+function closeModal() { modal.classList.remove('open'); }
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer = null;
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+/* ============================================================
+   ANIMATION LOOP
+   ============================================================ */
 const clock = new THREE.Clock();
-let hoveredNode = -1;
 
 function animate() {
   requestAnimationFrame(animate);
   const dt = clock.getDelta();
-  // smooth progress
-  progress += (targetProgress - progress) * Math.min(1, dt * 6);
+  const time = clock.elapsedTime;
+
+  if (!reducedMotion) {
+    progress += (targetProgress - progress) * Math.min(1, dt * 5.5);
+  } else {
+    progress = targetProgress;
+  }
   progress = Math.max(0, Math.min(1, progress));
 
-  // camera along curve
+  // camera
   const p = curve.getPoint(progress);
   const tangent = curve.getTangent(progress).normalize();
-  // position: offset behind + above
-  const camPos = p.clone().add(new THREE.Vector3(0, 3.2, 0)).sub(tangent.clone().multiplyScalar(6));
-  camera.position.lerp(camPos, 0.08);
-  const lookTarget = p.clone().add(new THREE.Vector3(0, 0.5, 0));
+  const camPos = p.clone().add(new THREE.Vector3(0, 3.4, 0)).sub(tangent.clone().multiplyScalar(6.2));
+  // subtle mouse parallax
+  camPos.x += mouse.x * 0.6;
+  camPos.y += mouse.y * 0.4;
+  camera.position.lerp(camPos, reducedMotion ? 1 : 0.09);
+  const lookTarget = p.clone().add(new THREE.Vector3(0, 0.6, 0));
   camera.lookAt(lookTarget);
 
-  // hover detection
-  raycaster.setFromCamera(mouse, camera);
-  const meshes = nodeMeshes.flatMap(nm => [nm.core, nm.ring]);
-  const hits = raycaster.intersectObjects(meshes);
-  if (hits.length) {
-    const hit = hits[0].object;
-    const nm = nodeMeshes.find(n => n.core === hit || n.ring === hit);
-    if (nm && hoveredNode !== nm.index) {
-      hoveredNode = nm.index;
-      tooltip.textContent = `${nm.index + 1}. ${stages[nm.index].title}`;
-      tooltip.classList.add('show');
-    }
-  } else {
-    if (hoveredNode !== -1) {
-      hoveredNode = -1;
-      tooltip.classList.remove('show');
-    }
-  }
+  // beacon at current node
+  const ci = nearestIndex(progress);
+  const cpos = curve.getPoint(nodeTs[ci]);
+  beacon.position.set(cpos.x, cpos.y + 0.5, cpos.z);
+  beacon.scale.set(1, 6, 1);
+  beacon.material.opacity = 0.45 + 0.2 * Math.sin(time * 3);
 
-  // subtle node bob
-  const time = clock.elapsedTime;
+  // node bob
   nodeMeshes.forEach((nm, i) => {
-    nm.core.position.y = points[i].y + Math.sin(time * 1.5 + i) * 0.08;
+    const bob = reducedMotion ? 0 : Math.sin(time * 1.4 + i * 0.7) * 0.08;
+    nm.core.position.y = nm.baseY + bob;
     nm.ring.position.y = nm.core.position.y;
     nm.halo.position.y = nm.core.position.y;
-    nm.sprite.position.y = nm.core.position.y + 1.0;
+    nm.pulse.position.y = nm.core.position.y;
+    nm.sprite.position.y = nm.core.position.y + 1.15;
   });
 
-  particles.rotation.y = time * 0.02;
-  particles.rotation.x = Math.sin(time * 0.1) * 0.1;
+  particles.rotation.y = time * 0.018;
+  if (!reducedMotion) particles.rotation.x = Math.sin(time * 0.08) * 0.08;
 
-  rim.position.x = Math.sin(time * 0.5) * 8;
-  rim.position.z = Math.cos(time * 0.5) * 8;
+  rim.position.x = Math.sin(time * 0.4) * 9;
+  rim.position.z = Math.cos(time * 0.4) * 9;
+  fill.position.x = Math.cos(time * 0.6) * 6;
+  fill.position.z = Math.sin(time * 0.6) * 6;
 
   updateHud(progress);
-  renderer.render(scene, camera);
+  composer.render();
 }
 
-// hide loader after first frame
+// hide loader
 requestAnimationFrame(() => {
-  setTimeout(() => loader.classList.add('hidden'), 400);
+  setTimeout(() => loader.classList.add('hidden'), 500);
 });
 
 animate();
+
+/* ============================================================
+   PWA
+   ============================================================ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+PY

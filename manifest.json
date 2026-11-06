@@ -1,0 +1,12 @@
+{
+  "name": "Hacker Roadmap — 3D Journey",
+  "short_name": "HackerRoadmap",
+  "description": "Interactive 3D scrollable roadmap for learning ethical hacking.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#05080f",
+  "theme_color": "#05080f",
+  "icons": [
+    { "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%94%90%3C/text%3E%3C/svg%3E", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

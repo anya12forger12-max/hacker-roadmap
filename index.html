@@ -8,6 +8,8 @@
   <meta property="og:title" content="Hacker Roadmap — 3D Journey" />
   <meta property="og:description" content="Scroll through a 3D path of hacker skills. Always know where you are." />
   <meta property="og:type" content="website" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#05080f" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%94%90%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -34,19 +36,27 @@
 
   <header class="topbar">
     <div class="brand">
-      <span class="brand-mark"> }));
+      <span class="brand-mark">{ }</span>
       <span>HACKER ROADMAP</span>
     </div>
     <div class="topbar-right">
+      <div class="overall" title="Overall completion">
+        <svg viewBox="0 0 40 40" class="overall-svg">
+          <circle cx="20" cy="20" r="16" class="overall-track" />
+          <circle cx="20" cy="20" r="16" class="overall-ring" id="overall-ring" />
+        </svg>
+        <span id="overall-pct">0%</span>
+      </div>
       <span class="status-dot"></span>
       <span id="progress-pct">0%</span>
+      <button id="btn-shortcuts" class="icon-btn" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">⌨</button>
     </div>
   </header>
 
-  <aside class="minimap" id="minimap"></aside>
+  <aside class="minimap" id="minimap" aria-label="Roadmap minimap"></aside>
 
-  <section class="hud" id="hud">
-    <div class="hud-card" id="hud-card">
+  <section class="hud" id="hud" aria-live="polite">
+    <div class="hud-card">
       <div class="hud-eyebrow">YOU ARE HERE</div>
       <h1 id="hud-title">Fundamentals</h1>
       <p id="hud-desc">Start your journey: networking, Linux, and a scripting language.</p>
@@ -55,11 +65,11 @@
         <span id="hud-tag">BEGINNER</span>
       </div>
       <div class="hud-resources" id="hud-resources"></div>
-      <div class="hud-progress">
-        <div class="hud-progress-bar" id="hud-progress-bar"></div>
-      </div>
+      <div class="hud-progress"><div class="hud-progress-bar" id="hud-progress-bar"></div></div>
+      <textarea id="notes-input" class="notes" placeholder="Notes for this stage… (auto-saved)" rows="2" aria-label="Notes for current stage"></textarea>
       <div class="hud-actions">
         <button id="btn-prev" aria-label="Previous stage">◀ Prev</button>
+        <button id="btn-complete" aria-label="Mark stage complete">Mark complete</button>
         <button id="btn-next" aria-label="Next stage">Next ▶</button>
       </div>
     </div>
@@ -70,12 +80,30 @@
     </div>
   </section>
 
-  <div class="tooltip" id="tooltip"></div>
+  <div class="tooltip" id="tooltip" role="tooltip"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="modal" id="shortcuts-modal" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
+    <div class="modal-card">
+      <h2 id="shortcuts-title">Keyboard shortcuts</h2>
+      <ul class="shortcuts-list">
+        <li><kbd>→</kbd> / <kbd>↓</kbd> Next stage</li>
+        <li><kbd>←</kbd> / <kbd>↑</kbd> Previous stage</li>
+        <li><kbd>Home</kbd> First stage</li>
+        <li><kbd>End</kbd> Last stage</li>
+        <li><kbd>C</kbd> Toggle complete</li>
+        <li><kbd>?</kbd> Toggle this help</li>
+        <li><kbd>Esc</kbd> Close</li>
+      </ul>
+      <p class="shortcuts-tip">Tip: swipe up/down on the 3D canvas on mobile.</p>
+      <button id="modal-close" class="modal-close">Close</button>
+    </div>
+  </div>
 
   <div class="scroll-spacer"></div>
 
   <footer class="footer">
-    Scroll or use Prev/Next to travel the roadmap. Click any node to jump. · Ethical hacking only — practice on systems you own or have permission to test.
+    Scroll or use Prev/Next to travel. Click any node to jump. · Ethical hacking only — systems you own or have permission to test.
   </footer>
 
   <script type="module" src="main.js"></script>
