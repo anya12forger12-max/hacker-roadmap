@@ -343,3 +343,13 @@ Frameworks are packs of pen testing tools with custom shell navigation and docum
 This repository is under MIT license.
 
 ([Table of Contents](#table-of-contents))
+
+
+## Installation
+
+No installation required — pure Python 3 standard library.
+
+```bash
+./install.sh
+python3 roadmap.py --help
+```
