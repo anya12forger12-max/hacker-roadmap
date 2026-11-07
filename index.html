@@ -71,9 +71,9 @@
       <div class="hud-progress"><div class="hud-progress-bar" id="hud-progress-bar"></div></div>
       <textarea id="notes-input" class="notes" placeholder="Notes for this stage… (auto-saved)" rows="2" aria-label="Notes for current stage"></textarea>
       <div class="hud-actions">
-        <button id="btn-prev" aria-label="Previous stage">◀ Prev</button>
-        <button id="btn-complete" aria-label="Mark stage complete">Mark complete</button>
-        <button id="btn-next" aria-label="Next stage">Next ▶</button>
+        <button id="btn-prev"><span aria-hidden="true">◀</span> Prev</button>
+        <button id="btn-complete">Mark complete</button>
+        <button id="btn-next">Next <span aria-hidden="true">▶</span></button>
       </div>
     </div>
     <div class="legend">
@@ -83,7 +83,7 @@
     </div>
   </section>
 
-  <div class="tooltip" id="tooltip" role="tooltip"></div>
+  <div class="tooltip" id="tooltip" role="tooltip" aria-label="Node preview"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <div class="modal" id="shortcuts-modal" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">

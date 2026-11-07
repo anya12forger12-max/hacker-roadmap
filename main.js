@@ -508,7 +508,6 @@ function showToast(msg) {
 const clock = new THREE.Clock();
 
 function animate() {
-  requestAnimationFrame(animate);
   const dt = clock.getDelta();
   const time = clock.elapsedTime;
 
@@ -564,7 +563,19 @@ requestAnimationFrame(() => {
   setTimeout(() => loader.classList.add('hidden'), 500);
 });
 
-animate();
+// Pause rendering when tab hidden (saves CPU, helps idle)
+let paused = false;
+document.addEventListener('visibilitychange', () => {
+  paused = document.hidden;
+  if (!paused) clock.getDelta(); // reset delta
+});
+const _animate = animate;
+function loop() {
+  if (!paused) _animate();
+  requestAnimationFrame(loop);
+}
+// Replace direct animate call
+requestAnimationFrame(loop);
 
 /* ============================================================
    PWA
