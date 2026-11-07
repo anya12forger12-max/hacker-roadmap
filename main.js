@@ -117,7 +117,7 @@ for (let i = 0; i < N; i++) {
 const curve = new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.5);
 
 // Path tube
-const pathGeo = new THREE.TubeGeometry(curve, 240, 0.13, 16, false);
+const pathGeo = new THREE.TubeGeometry(curve, 120, 0.13, 12, false);
 const pathMat = new THREE.MeshStandardMaterial({
   color: 0x00ffaa, emissive: 0x00ffaa, emissiveIntensity: 0.5,
   transparent: true, opacity: 0.6, metalness: 0.4, roughness: 0.3,
@@ -126,7 +126,7 @@ const pathMesh = new THREE.Mesh(pathGeo, pathMat);
 scene.add(pathMesh);
 
 // Glow tube
-const glowGeo = new THREE.TubeGeometry(curve, 240, 0.5, 16, false);
+const glowGeo = new THREE.TubeGeometry(curve, 120, 0.5, 12, false);
 const glowMat = new THREE.MeshBasicMaterial({ color: 0x00ffaa, transparent: true, opacity: 0.05, side: THREE.DoubleSide });
 scene.add(new THREE.Mesh(glowGeo, glowMat));
 
@@ -222,7 +222,7 @@ const beacon = new THREE.Mesh(beaconGeo, beaconMat);
 scene.add(beacon);
 
 // Particles
-const particleCount = 700;
+const particleCount = 320;
 const pGeo = new THREE.BufferGeometry();
 const pPos = new Float32Array(particleCount * 3);
 const pCol = new Float32Array(particleCount * 3);
@@ -315,6 +315,8 @@ function syncScrollTo(t) {
   window.scrollTo({ top: t * maxScroll, behavior: reducedMotion ? 'auto' : 'smooth' });
 }
 
+let lastHudPct = -1;
+let lastHudIndex = -1;
 function updateHud(t) {
   const i = nearestIndex(t);
   if (i !== currentIndex) {
@@ -326,19 +328,22 @@ function updateHud(t) {
     hudTag.textContent = s.tag;
     hudTag.style.color = '#' + s.color.toString(16).padStart(6, '0');
     hudResources.innerHTML = (stageResources[i] || []).map(r => `<span class="chip">${r}</span>`).join('');
-    // notes
     notesInput.value = notes[i] || '';
-    // complete button state
     updateCompleteBtn();
+    lastHudIndex = i;
   }
   const pct = Math.round(t * 100);
-  progressPct.textContent = pct + '%';
-  hudBar.style.width = pct + '%';
+  if (pct !== lastHudPct) {
+    progressPct.textContent = pct + '%';
+    hudBar.style.width = pct + '%';
+    lastHudPct = pct;
+  }
 
   minimapDots.forEach((d, idx) => {
-    d.classList.remove('done', 'current');
-    if (completed.has(idx)) d.classList.add('done');
-    if (idx === currentIndex) d.classList.add('current');
+    const wantDone = completed.has(idx);
+    const wantCurrent = idx === currentIndex;
+    if (wantDone !== d.classList.contains('done')) d.classList.toggle('done', wantDone);
+    if (wantCurrent !== d.classList.contains('current')) d.classList.toggle('current', wantCurrent);
   });
 
   nodeMeshes.forEach((nm, idx) => {
@@ -392,12 +397,15 @@ notesInput.addEventListener('input', () => {
 /* ============================================================
    SCROLL
    ============================================================ */
+let cachedMaxScroll = 0;
+function refreshMaxScroll() { cachedMaxScroll = document.documentElement.scrollHeight - window.innerHeight; }
 function onScroll() {
-  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-  targetProgress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+  if (!cachedMaxScroll) refreshMaxScroll();
+  targetProgress = cachedMaxScroll > 0 ? window.scrollY / cachedMaxScroll : 0;
   targetProgress = Math.max(0, Math.min(1, targetProgress));
   try { localStorage.setItem(STORE.progress, String(targetProgress)); } catch (e) {}
 }
+window.addEventListener('resize', refreshMaxScroll);
 window.addEventListener('scroll', onScroll, { passive: true });
 onScroll();
 
