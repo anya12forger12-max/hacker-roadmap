@@ -35,3 +35,13 @@ Static site — deploy anywhere:
 ## Disclaimer
 
 For **educational and authorized testing only**. Practice on systems you own or have written permission to test. Unauthorized access is illegal.
+
+---
+
+## Repository
+
+- **Home:** https://github.com/anya12forger12-max/hacker-roadmap
+- **License:** MIT (see `LICENSE`)
+- **Issues:** https://github.com/anya12forger12-max/hacker-roadmap/issues
+- **Security:** See `SECURITY.md` / `.github/SECURITY.md`
+- **Contributing:** See `CONTRIBUTING.md` (or open an issue/PR)
