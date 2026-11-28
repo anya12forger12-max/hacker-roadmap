@@ -1,18 +1,14 @@
-<p align="center">
-    <img src="https://i.imgur.com/VeEYEkT.png" alt="Hacker roadmap" /><br>
-</p>
+# Hacker Roadmap — a learning map for ethical hacking
 
-This repository is an overview of what you need to learn penetration testing and a collection of hacking tools, resources and references to practice ethical hacking. Most of the tools are UNIX compatible, free and open source.
+**A structured overview of penetration-testing concepts, tools and practice targets, with a small local progress tracker.**
 
-## Status
+> **Provenance.** This repository is a restored snapshot of the archived upstream [sundowndev/hacker-roadmap](https://github.com/sundowndev/hacker-roadmap), originally created by **Raphael Cerveaux (SundownDEV)**. The roadmap, vocabulary sections and tool tables below are upstream work, not original work by this account; MIT © 2018 Raphael Cerveaux, preserved in [LICENSE](LICENSE). Later commits in this snapshot add the progress tracker, CI and contributor docs. The upstream project **has been terminated and archived**, so content may be outdated — verify tool status before relying on it.
 
-**This project has been terminated and archived**. Content might be outdated.
+The roadmap collects what to learn before and during penetration testing: languages, core concepts, tool categories, books, advisories and deliberately vulnerable practice environments. Most listed tools are UNIX-compatible, free and open source; exceptions are noted in the tables.
 
-----
+## Progress tracker (added in this snapshot)
 
-## Progress tracker
-
-This repository ships a small dependency-free Python CLI that turns the tool
+A dependency-free Python 3 CLI, added locally (not part of the archived upstream), turns the tool
 tables below into a personal learning checklist:
 
 ```bash
@@ -340,16 +336,16 @@ Frameworks are packs of pen testing tools with custom shell navigation and docum
 
 # License
 
-This repository is under MIT license.
+The upstream roadmap is MIT © 2018 Raphael Cerveaux; see [LICENSE](LICENSE). The progress tracker and CI additions in this restored snapshot are contributions by this account and do not change that attribution.
 
 ([Table of Contents](#table-of-contents))
 
 
-## Installation
+## Installation (tracker)
 
-No installation required — pure Python 3 standard library.
+The roadmap itself is just this README; no installation is required. The tracker uses only the Python 3 standard library:
 
 ```bash
-./install.sh
+./install.sh            # prints requirements; there is nothing to install
 python3 roadmap.py --help
 ```
